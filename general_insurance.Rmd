@@ -1,0 +1,111 @@
+---
+title: "General Insurance Project"
+author: "ID29741823"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyr)
+library(ggplot2)
+library(MASS)
+library(gridExtra)
+library(car)
+```
+
+```{r}
+claims <- read_xls("data/claims2020.xls")
+claims
+```
+Number Of Claims - Modelling
+```{r}
+Num_Claims <- ggplot(claims, aes(x=NClaims))+geom_histogram(binwidth=0.2)
+Num_Claims
+
+fit_NClaims <- claims$NClaims
+fit_NClaims <- sort(fit_NClaims)
+
+#EXPONENTIAL
+NClaims_fitexp <- fitdistr(fit_NClaims, densfun = "exponential")
+NClaims_fitexp
+
+x <- seq(0, 50000, length.out=100000)
+expdata<- data.frame(x=x, exp=rexp(x, rate= 2.72772206  ))
+qqPlot(x=fit_NClaims, distribution="exp", rate=2.72772206 )
+
+
+#POISSON
+NClaims_fitpois <- fitdistr(fit_NClaims, densfun = "poisson")
+NClaims_fitpois
+
+x <- seq(1, 1000, length.out=100000)
+poisdata<- data.frame(x=x, pois=rpois(x, lambda=0.366606266))
+Num_Claimspois <- ggplot(poisdata, aes(x=pois))+geom_histogram(binwidth=1)
+Num_Claimspois
+qqPlot(x=claims$NClaims, distribution="pois", lambda=0.366606266)
+
+
+#Geometric
+NClaims_fitgeom <- fitdistr(fit_NClaims, densfun = "geometric")
+NClaims_fitgeom
+
+x <- seq(1, 1000, length.out=100000)
+geomdata<- data.frame(x=x, geom=rgeom(x, prob=0.731739657))
+qqPlot(x=claims$NClaims, distribution="geom", prob=0.731739657)
+
+
+```
+
+Total Claims - Modelling
+```{r}
+
+fit_TotalClaims <- claims$TotalClaims[which(claims$TotalClaims!=0)]
+fit_TotalClaims <- fit_TotalClaims[which(fit_TotalClaims!=300)]
+fit_TotalClaims <- fit_TotalClaims-300
+fit_NumClaims <- claims$NClaims[which(claims$NClaims2!=0)]
+fit_AvgClaims <- fit_TotalClaims/fit_NumClaims
+fit_AvgClaims <- rep(fit_AvgClaims, fit_NumClaims)
+
+
+#EXPONENTIAL
+TClaims_fitexp <- fitdistr(fit_AvgClaims, densfun = "exponential")
+TClaims_fitexp
+
+x <- seq(0, 50000, length.out=100000)
+expdata<- data.frame(x=x, exp=rexp(x, rate= 2.021486e-04   ))
+Total_Claimsexp <- ggplot(expdata, aes(x=exp))+geom_histogram(binwidth=50,color="black", fill="white")
+Total_Claimsexp
+qqPlot(x=fit_TotalClaims, distribution="exp", rate=2.021486e-04  )
+
+#Lognormal
+TClaims_fitlog <- fitdistr(fit_AvgClaims, densfun = "lognormal")
+TClaims_fitlog
+
+x <- seq(0, 50000, length.out=100000)
+logdata<- data.frame(x=x, log=rlnorm(x, meanlog= 8.05774476, sdlog=1.14187603 ))
+qqPlot(x=fit_TotalClaims, distribution="lnorm", meanlog= 8.05774476, sdlog=1.14187603  )
+
+
+#Weibull
+TClaims_fitwei <- fitdistr(fit_AvgClaims, densfun = "weibull")
+TClaims_fitwei
+
+x <- seq(0, 50000, length.out=100000)
+weidata<- data.frame(x=x, log=rweibull(x, shape=1.171805, scale=5.375415e+03 ))
+qqPlot(x=fit_TotalClaims, distribution="weibull", shape=1.171805, scale=5.375415e+03)
+
+
+
+
+fit_AvgClaims <- data.frame(fit_AvgClaims)
+
+Avg_Claimamt <- ggplot(fit_AvgClaims, aes(x=fit_AvgClaims, y = ..density..))+geom_histogram(binwidth=50, color="black", fill="white")
+Avg_Claimamt
+
+
+
+```
+
+
+
